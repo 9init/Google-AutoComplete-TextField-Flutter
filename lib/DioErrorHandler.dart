@@ -6,58 +6,51 @@ class DioErrorHandler {
   ErrorResponse errorResponse = ErrorResponse();
   String errorDescription = "";
 
-
-
-
-  ErrorResponse handleDioError(DioError dioError) {
-    switch (dioError.type) {
-      case DioErrorType.cancel:
-
+  ErrorResponse handleDioError(DioException dioException) {
+    switch (dioException.type) {
+      case DioExceptionType.cancel:
         errorResponse.message = "Request to API server was cancelled";
         break;
-      case DioErrorType.connectTimeout:
+      case DioExceptionType.connectionTimeout:
         errorResponse.message = "Connection timeout with API server";
         break;
-      case DioErrorType.other:
 
-        if((dioError.message?.contains("RedirectException")??false)){
-          errorResponse.message = "${dioError.message}";
-        }else {
+      // TODO
+      case DioExceptionType.connectionError:
+        if ((dioException.message?.contains("RedirectException") ?? false)) {
+          errorResponse.message = "${dioException.message}";
+        } else {
           errorResponse.message = "Please check the internet connection";
         }
         break;
-      case DioErrorType.receiveTimeout:
 
+      case DioExceptionType.receiveTimeout:
         errorResponse.message = "Receive timeout in connection with API server";
         break;
-      case DioErrorType.response:
+      case DioExceptionType.badResponse:
         try {
-
-          if (dioError.response?.data['message'] != null) {
-            errorResponse.message = dioError.response?.data['message'];
+          if (dioException.response?.data['message'] != null) {
+            errorResponse.message = dioException.response?.data['message'];
           } else {
-            if ((dioError.response?.statusMessage ?? "").isNotEmpty)
-              errorResponse.message = dioError.response?.statusMessage;
+            if ((dioException.response?.statusMessage ?? "").isNotEmpty)
+              errorResponse.message = dioException.response?.statusMessage;
             else
-              return _handleError(
-                  dioError.response!.statusCode, dioError.response!.data);
+              return _handleError(dioException.response!.statusCode,
+                  dioException.response!.data);
           }
         } catch (e) {
-
-          if ((dioError.response?.statusMessage ?? "").isNotEmpty)
-            errorResponse.message = dioError.response?.statusMessage;
+          if ((dioException.response?.statusMessage ?? "").isNotEmpty)
+            errorResponse.message = dioException.response?.statusMessage;
           else
             return _handleError(
-                dioError.response!.statusCode, dioError.response!.data);
+                dioException.response!.statusCode, dioException.response!.data);
         }
 
         break;
-      case DioErrorType.sendTimeout:
-
+      case DioExceptionType.sendTimeout:
         errorResponse.message = "Send timeout in connection with API server";
         break;
       default:
-
         errorResponse.message = "Something went wrong";
         break;
     }
@@ -68,8 +61,8 @@ class DioErrorHandler {
     switch (statusCode) {
       case 400:
         return getMas(error);
-    // case 401:
-    //   return checkTokenExpire(error);
+      // case 401:
+      //   return checkTokenExpire(error);
       case 404:
         return getMas(error);
       case 403:
@@ -120,31 +113,25 @@ class DioErrorHandler {
   }
 }
 
-
 class ErrorHandler {
-
-  static final ErrorHandler _inst=ErrorHandler.internal();
+  static final ErrorHandler _inst = ErrorHandler.internal();
   ErrorHandler.internal();
 
   factory ErrorHandler() {
     return _inst;
   }
-  ErrorResponse errorResponse=ErrorResponse();
+  ErrorResponse errorResponse = ErrorResponse();
 
   ErrorResponse handleError(var error) {
-    if(error.runtimeType.toString().toLowerCase() =="_TypeError".toLowerCase()){
+    if (error.runtimeType.toString().toLowerCase() ==
+        "_TypeError".toLowerCase()) {
       // return error.toString();
-      errorResponse.message ="The Provided API key is invalid";
+      errorResponse.message = "The Provided API key is invalid";
       return errorResponse;
-    }
-
-
-    else if(error is DioError) {
+    } else if (error is DioError) {
       return DioErrorHandler().handleDioError(error);
     }
     errorResponse.message = "The Provided API key is invalid";
     return errorResponse;
   }
-
-
 }
